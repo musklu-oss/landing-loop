@@ -38,7 +38,7 @@ jobs:
             if (request.startsWith("@gemini-cli /approve")) {
               core.setOutput('command', 'approve');
             } else {
-              core.setOutput('command', 'invoke');
+              core.setOutput('command', 'plan');
               core.setOutput('additional_context', request.replace(/^@gemini-cli/, '').trim());
             }
 
@@ -52,28 +52,26 @@ jobs:
         run: |-
           gh issue comment "${ISSUE_NUMBER}" --body "${MESSAGE}" --repo "${REPOSITORY}"
 
-  invoke:
+  plan:
     needs: 'dispatch'
     if: |-
-      ${{ needs.dispatch.outputs.command == 'invoke' }}
-    uses: './.github/workflows/gemini-invoke.yml'
+      ${{ needs.dispatch.outputs.command == 'plan' }}
+    uses: './.github/workflows/agent-plan.yml'
     permissions:
       contents: 'read'
-      id-token: 'write'
       issues: 'write'
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
     secrets: 'inherit'
 
-  plan-execute:
+  execute:
     needs: 'dispatch'
     if: |-
       ${{ needs.dispatch.outputs.command == 'approve' }}
-    uses: './.github/workflows/gemini-plan-execute.yml'
+    uses: './.github/workflows/agent-execute.yml'
     permissions:
       contents: 'write'
-      id-token: 'write'
       issues: 'write'
       pull-requests: 'write'
     with:
@@ -83,9 +81,9 @@ jobs:
   # PR-urile create cu GITHUB_TOKEN nu declanșează alte workflow-uri,
   # deci preview-ul se cheamă explicit după execuție.
   preview:
-    needs: 'plan-execute'
+    needs: 'execute'
     if: |-
-      ${{ needs.plan-execute.result == 'success' }}
+      ${{ needs.execute.result == 'success' }}
     uses: './.github/workflows/preview.yml'
     permissions:
       contents: 'read'

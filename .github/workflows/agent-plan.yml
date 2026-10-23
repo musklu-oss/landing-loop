@@ -1,0 +1,86 @@
+name: 'Agent Plan'
+
+# Gemini scrie un plan ca text (fără unelte GitHub). Workflow-ul postează el comentariul.
+on:
+  workflow_call:
+    inputs:
+      additional_context:
+        type: 'string'
+        required: false
+
+concurrency:
+  group: 'agent-plan-${{ github.event.issue.number }}'
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  plan:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 10
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    steps:
+      - name: 'Checkout Code'
+        uses: 'actions/checkout@v4'
+        with:
+          persist-credentials: false
+
+      - name: 'Prepare prompt context'
+        env:
+          TITLE: '${{ github.event.issue.title }}'
+          DESCRIPTION: '${{ github.event.issue.body }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          REPOSITORY: '${{ github.repository }}'
+          ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
+        run: |-
+          mkdir -p .gemini
+          jq -n \
+            --arg title "${TITLE}" \
+            --arg desc "${DESCRIPTION}" \
+            --arg num "${ISSUE_NUMBER}" \
+            --arg repo "${REPOSITORY}" \
+            --arg context "${ADDITIONAL_CONTEXT}" \
+            '{title: $title, description: $desc, issue_number: $num, repository: $repo, additional_context: $context}' > .gemini/context.json
+
+      - name: 'Run Gemini CLI'
+        id: 'run_gemini'
+        uses: 'google-github-actions/run-gemini-cli@v0'
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: 'true'
+        with:
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_model: '${{ vars.GEMINI_MODEL }}'
+          upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
+          workflow_name: 'agent-plan'
+          settings: |-
+            {
+              "model": { "maxSessionTurns": 8 },
+              "tools": { "core": ["read_file", "list_directory", "glob", "grep_search"] }
+            }
+          prompt: '/landing-plan'
+
+      - name: 'Post plan'
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          REPO: '${{ github.repository }}'
+          PLAN: '${{ steps.run_gemini.outputs.summary }}'
+        run: |-
+          if [ -z "${PLAN// /}" ]; then
+            echo "Gemini nu a returnat niciun plan." >&2
+            exit 1
+          fi
+          {
+            echo "## AI Assistant: Plan of Action"
+            echo
+            printf '%s\n' "${PLAN}"
+            echo
+            echo "---"
+            echo "Pentru execuție, comentează: \`@gemini-cli /approve\`"
+          } > plan-comment.md
+          gh issue comment "${ISSUE_NUMBER}" --repo "${REPO}" --body-file plan-comment.md

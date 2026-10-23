@@ -1,0 +1,108 @@
+name: 'Agent Execute'
+
+# Gemini editează fișierele din site/ în copia de pe server. Workflow-ul face branch, commit, push și PR.
+on:
+  workflow_call:
+    inputs:
+      additional_context:
+        type: 'string'
+        required: false
+
+concurrency:
+  group: 'agent-execute-${{ github.event.issue.number }}'
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  execute:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 15
+    permissions:
+      contents: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    steps:
+      - name: 'Checkout Code'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Find approved plan'
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          REPO: '${{ github.repository }}'
+        run: |-
+          gh api "repos/${REPO}/issues/${ISSUE_NUMBER}/comments" --paginate \
+            | jq -s -r 'add | map(select(.user.login == "github-actions[bot]" and (.body | startswith("## AI Assistant: Plan of Action")))) | last | .body // empty' > plan.md
+          if [ ! -s plan.md ]; then
+            echo "Niciun plan găsit. Cere întâi un plan cu: @gemini-cli <cerere>" >&2
+            exit 1
+          fi
+
+      - name: 'Prepare prompt context'
+        env:
+          TITLE: '${{ github.event.issue.title }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          REPOSITORY: '${{ github.repository }}'
+        run: |-
+          mkdir -p .gemini
+          jq -n \
+            --arg title "${TITLE}" \
+            --arg num "${ISSUE_NUMBER}" \
+            --arg repo "${REPOSITORY}" \
+            --rawfile plan plan.md \
+            '{title: $title, issue_number: $num, repository: $repo, approved_plan: $plan}' > .gemini/context.json
+
+      - name: 'Run Gemini CLI'
+        id: 'run_gemini'
+        uses: 'google-github-actions/run-gemini-cli@v0'
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: 'true'
+        with:
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_model: '${{ vars.GEMINI_MODEL }}'
+          upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
+          workflow_name: 'agent-execute'
+          settings: |-
+            {
+              "model": { "maxSessionTurns": 20 },
+              "tools": { "core": ["read_file", "list_directory", "glob", "grep_search", "write_file", "replace"] }
+            }
+          prompt: '/landing-execute'
+
+      - name: 'Commit, push and open PR'
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          ISSUE_TITLE: '${{ github.event.issue.title }}'
+          REPO: '${{ github.repository }}'
+          RUN_ID: '${{ github.run_id }}'
+          SUMMARY: '${{ steps.run_gemini.outputs.summary }}'
+        run: |-
+          set -euo pipefail
+          # Garanție: doar fișierele din site/ pot fi modificate de agent.
+          BAD=$(git diff --name-only | grep -v '^site/' || true)
+          if [ -n "${BAD}" ]; then
+            echo "Agentul a modificat fișiere în afara site/: ${BAD}" >&2
+            exit 1
+          fi
+          git add site/
+          if git diff --cached --quiet; then
+            echo "Agentul nu a modificat nimic în site/." >&2
+            exit 1
+          fi
+          BRANCH="agent/issue-${ISSUE_NUMBER}-${RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+          git commit -m "feat: ${ISSUE_TITLE} (#${ISSUE_NUMBER})"
+          git push origin "${BRANCH}"
+          {
+            echo "Closes #${ISSUE_NUMBER}"
+            echo
+            printf '%s\n' "${SUMMARY}"
+          } > pr-body.md
+          gh pr create --repo "${REPO}" --base main --head "${BRANCH}" \
+            --title "Agent: ${ISSUE_TITLE}" --body-file pr-body.md

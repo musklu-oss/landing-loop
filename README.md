@@ -16,7 +16,7 @@ Doar proprietarul repo-ului poate declanșa agentul.
 - Variabilă `GEMINI_MODEL` = `gemini-3.5-flash-lite`
 - Settings -> Actions -> General -> „Allow GitHub Actions to create and approve pull requests"
 
-## Surse
-`gemini-invoke.yml` și `gemini-plan-execute.yml` vin din exemplele oficiale
-[google-github-actions/run-gemini-cli](https://github.com/google-github-actions/run-gemini-cli),
-copiate fără modificări.
+## Cum funcționează
+Gemini nu folosește unelte GitHub. La plan scoate doar text, iar workflow-ul îl postează.
+La execuție editează doar fișierele din `site/`, iar workflow-ul face branch, commit, push și PR.
+Acțiunea folosită: [google-github-actions/run-gemini-cli](https://github.com/google-github-actions/run-gemini-cli).
