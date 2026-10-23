@@ -3,23 +3,248 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Landing page</title>
+  <title>Scalux - Scări interioare în kit</title>
   <style>
-    :root { --bg: #0f172a; --fg: #f8fafc; --accent: #38bdf8; }
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --fg: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --border: #334155;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); }
-    main { max-width: 960px; margin: 0 auto; padding: 96px 24px; }
-    h1 { font-size: clamp(2rem, 6vw, 3.5rem); margin: 0 0 16px; }
-    p { font-size: 1.125rem; line-height: 1.6; max-width: 40ch; }
-    a.btn { display: inline-block; margin-top: 24px; padding: 12px 24px; border-radius: 8px;
-            background: var(--accent); color: var(--bg); font-weight: 600; text-decoration: none; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+    }
+    header {
+      background: rgba(15, 23, 42, 0.9);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .logo {
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--fg);
+      text-decoration: none;
+    }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      margin-left: 24px;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+    nav a:hover {
+      color: var(--accent);
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+    section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    section:last-of-type {
+      border-bottom: none;
+    }
+    .hero {
+      text-align: center;
+      padding: 80px 0;
+    }
+    h1 {
+      font-size: clamp(2.25rem, 5vw, 3.75rem);
+      margin: 0 0 24px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+    h2 {
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      margin: 0 0 40px;
+      text-align: center;
+      font-weight: 700;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 24px;
+    }
+    .card h3 {
+      font-size: 1.25rem;
+      margin: 0 0 12px;
+      color: var(--fg);
+    }
+    .card p {
+      color: var(--muted);
+      margin: 0;
+      font-size: 1rem;
+    }
+    .materials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+    .material-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 32px;
+    }
+    .material-card h3 {
+      font-size: 1.5rem;
+      margin: 0 0 16px;
+      color: var(--accent);
+    }
+    .material-card p {
+      color: var(--muted);
+      margin: 0;
+    }
+    .contact-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 48px;
+      text-align: center;
+    }
+    .contact-info {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        gap: 16px;
+      }
+      nav a {
+        margin: 0 12px;
+      }
+      .contact-container {
+        padding: 24px;
+      }
+    }
   </style>
 </head>
 <body>
+  <header>
+    <a href="#" class="logo">Scalux</a>
+    <nav>
+      <a href="#avantaje">Avantaje</a>
+      <a href="#materiale">Materiale</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
   <main>
-    <h1>Titlu provizoriu</h1>
-    <p>Pagina de pornire. Agentul o va înlocui pe baza issue-urilor.</p>
-    <a class="btn" href="#">Buton</a>
+    <section class="hero">
+      <h1>Scări interioare în kit pentru locuința ta</h1>
+      <p>Sisteme modulare de scări elegante și rezistente, proiectate pentru montaj rapid și design contemporan.</p>
+      <a class="btn" href="#contact">Cere o ofertă</a>
+    </section>
+
+    <section id="avantaje">
+      <h2>Avantajele Scalux</h2>
+      <div class="grid-4">
+        <div class="card">
+          <h3>Lemn și metal</h3>
+          <p>Combinația perfectă între rezistența structurii metalice și căldura treptelor din lemn masiv.</p>
+        </div>
+        <div class="card">
+          <h3>Scări în spirală</h3>
+          <p>Soluții ingenioase pentru optimizarea spațiului, ideale pentru orice tip de locuință sau mansardă.</p>
+        </div>
+        <div class="card">
+          <h3>Calitate superioară</h3>
+          <p>Materiale certificate și finisaje de înaltă precizie pentru o durabilitate de lungă durată.</p>
+        </div>
+        <div class="card">
+          <h3>Kit ușor de instalat</h3>
+          <p>Instrucțiuni clare și componente pre-asamblate pentru un montaj facil fără efort suplimentar.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="materiale">
+      <h2>Materiale de înaltă clasă</h2>
+      <div class="materials-grid">
+        <div class="material-card">
+          <h3>Lemn</h3>
+          <p>Trepte din esențe lemnoase selecționate, tratate cu lacuri ecologice pentru protecție împotriva uzurii și evidențierea fibrei naturale.</p>
+        </div>
+        <div class="material-card">
+          <h3>Metal</h3>
+          <p>Structuri metalice vopsite în câmp electrostatic, asigurând o stabilitate structurală maximă, eleganță și rezistență în timp.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="contact-container">
+        <h2>Cere o ofertă</h2>
+        <p>Contactează-ne pentru consultanță tehnică și o ofertă personalizată adaptată proiectului tău.</p>
+        <div class="contact-info">
+          <div>Telefon: [telefon]</div>
+          <div>Email: [email]</div>
+          <div>Adresă: [adresă]</div>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <footer>
+    <p>&copy; 2026 Scalux. Toate drepturile rezervate.</p>
+  </footer>
 </body>
 </html>
