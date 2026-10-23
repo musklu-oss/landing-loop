@@ -1,0 +1,94 @@
+name: 'Agent Dispatch'
+
+# Pornește doar la comentarii ale OWNER-ului care încep cu "@gemini-cli".
+#   @gemini-cli <cerere>   -> Gemini postează "AI Assistant: Plan of Action"
+#   @gemini-cli /approve   -> Gemini execută planul (branch + PR), apoi se fac screenshot-urile
+on:
+  issue_comment:
+    types:
+      - 'created'
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  dispatch:
+    if: |-
+      github.event.sender.type == 'User' &&
+      github.event.comment.author_association == 'OWNER' &&
+      startsWith(github.event.comment.body, '@gemini-cli')
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    outputs:
+      command: '${{ steps.extract_command.outputs.command }}'
+      additional_context: '${{ steps.extract_command.outputs.additional_context }}'
+    steps:
+      - name: 'Extract command'
+        id: 'extract_command'
+        uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea' # v7
+        env:
+          REQUEST: '${{ github.event.comment.body }}'
+        with:
+          script: |
+            const request = process.env.REQUEST;
+            if (request.startsWith("@gemini-cli /approve")) {
+              core.setOutput('command', 'approve');
+            } else {
+              core.setOutput('command', 'invoke');
+              core.setOutput('additional_context', request.replace(/^@gemini-cli/, '').trim());
+            }
+
+      - name: 'Acknowledge request'
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          REPOSITORY: '${{ github.repository }}'
+          MESSAGE: |-
+            Cerere primită, lucrez la ea. Progres: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |-
+          gh issue comment "${ISSUE_NUMBER}" --body "${MESSAGE}" --repo "${REPOSITORY}"
+
+  invoke:
+    needs: 'dispatch'
+    if: |-
+      ${{ needs.dispatch.outputs.command == 'invoke' }}
+    uses: './.github/workflows/gemini-invoke.yml'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+    secrets: 'inherit'
+
+  plan-execute:
+    needs: 'dispatch'
+    if: |-
+      ${{ needs.dispatch.outputs.command == 'approve' }}
+    uses: './.github/workflows/gemini-plan-execute.yml'
+    permissions:
+      contents: 'write'
+      id-token: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+    secrets: 'inherit'
+
+  # PR-urile create cu GITHUB_TOKEN nu declanșează alte workflow-uri,
+  # deci preview-ul se cheamă explicit după execuție.
+  preview:
+    needs: 'plan-execute'
+    if: |-
+      ${{ needs.plan-execute.result == 'success' }}
+    uses: './.github/workflows/preview.yml'
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    secrets: 'inherit'

@@ -1,0 +1,6 @@
+node_modules/
+shots/
+comment.md
+.gemini/
+gha-creds-*.json
+.env

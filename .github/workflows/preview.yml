@@ -1,0 +1,85 @@
+name: 'Preview Screenshots'
+
+# Face screenshot-uri desktop/tablet/mobil pe branch-ul unui PR și le atașează ca artefact.
+# Manual: Actions -> Preview Screenshots -> Run workflow (poți da numărul PR-ului).
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        type: 'string'
+        required: false
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Numărul PR-ului (gol = cel mai recent PR deschis de bot)'
+        type: 'string'
+        required: false
+
+jobs:
+  preview:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 15
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    steps:
+      - name: 'Find PR'
+        id: 'pr'
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          REPO: '${{ github.repository }}'
+          PR_NUMBER: '${{ inputs.pr_number }}'
+        run: |-
+          if [ -z "${PR_NUMBER}" ]; then
+            PR_NUMBER=$(gh pr list --repo "${REPO}" --state open --author "app/github-actions" --limit 1 --json number --jq '.[0].number')
+          fi
+          if [ -z "${PR_NUMBER}" ] || [ "${PR_NUMBER}" = "null" ]; then
+            echo "Niciun PR deschis găsit." >&2
+            exit 1
+          fi
+          BRANCH=$(gh pr view "${PR_NUMBER}" --repo "${REPO}" --json headRefName --jq '.headRefName')
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+
+      - name: 'Checkout PR branch'
+        uses: 'actions/checkout@v4'
+        with:
+          ref: '${{ steps.pr.outputs.branch }}'
+          persist-credentials: false
+
+      - name: 'Setup Node'
+        uses: 'actions/setup-node@v4'
+        with:
+          node-version: '22'
+
+      - name: 'Install Playwright'
+        run: |-
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: 'Take screenshots'
+        run: |-
+          node scripts/screenshots.mjs
+
+      - name: 'Upload screenshots'
+        uses: 'actions/upload-artifact@v4'
+        with:
+          name: 'screenshots-pr-${{ steps.pr.outputs.number }}'
+          path: 'shots/'
+
+      - name: 'Comment report on PR'
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          REPO: '${{ github.repository }}'
+          PR_NUMBER: '${{ steps.pr.outputs.number }}'
+          RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        run: |-
+          {
+            echo "## Preview"
+            echo
+            echo "Screenshot-uri (desktop, tablet, mobil): descarcă artefactul \`screenshots-pr-${PR_NUMBER}\` din ${RUN_URL}"
+            echo
+            cat shots/report.md
+          } > comment.md
+          gh pr comment "${PR_NUMBER}" --repo "${REPO}" --body-file comment.md
