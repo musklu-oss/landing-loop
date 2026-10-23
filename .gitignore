@@ -3,5 +3,6 @@ shots/
 comment.md
 .gemini/*
 !.gemini/commands/
+!.gemini/context.json
 gha-creds-*.json
 .env
