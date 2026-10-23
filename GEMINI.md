@@ -10,6 +10,9 @@ Proiect: landing page static. Tot ce construiești stă în `site/`.
 - Nu inventa date de contact, prețuri sau mărturii. Dacă lipsesc, folosește un marcaj clar, de exemplu `[telefon]`.
 - Nu pune secrete, chei sau date personale în fișiere.
 
+## Lecții aprobate
+1. **Fără afirmații inventate despre produs.** Folosește doar faptele primite în issue. Nu adăuga materiale, tehnologii, finisaje, certificări, tipuri de lemn sau de metal, garanții, servicii sau superlative (masiv, certificat, premium, maxim, de înaltă clasă) dacă nu sunt scrise explicit. Textele rămân scurte și generale. Sursa: PR #6, versiune respinsă.
+
 ## Rubrica de design (se verifică pe screenshot-uri)
 1. **Responsive:** fără scroll orizontal la 390px, 820px și 1440px.
 2. **Contrast:** text lizibil pe fundal (minim 4.5:1 pentru textul normal).
