@@ -139,4 +139,4 @@ jobs:
                 "core": []
               }
             }
-          prompt: '/gemini-plan-execute'
+          prompt: '/landing-execute'
