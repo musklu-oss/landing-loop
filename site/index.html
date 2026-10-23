@@ -13,6 +13,9 @@
     p { font-size: 1.125rem; line-height: 1.6; max-width: 40ch; }
     a.btn { display: inline-block; margin-top: 24px; padding: 12px 24px; border-radius: 8px;
             background: var(--accent); color: var(--bg); font-weight: 600; text-decoration: none; }
+    .benefits { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 32px; margin-top: 64px; }
+    .benefit-item h3 { font-size: 1.25rem; margin: 0 0 8px; color: var(--accent); }
+    .benefit-item p { font-size: 1rem; line-height: 1.5; max-width: none; color: #cbd5e1; margin: 0; }
   </style>
 </head>
 <body>
@@ -20,6 +23,20 @@
     <h1>Titlu provizoriu</h1>
     <p>Pagina de pornire. Agentul o va înlocui pe baza issue-urilor.</p>
     <a class="btn" href="#">Buton</a>
+    <section class="benefits">
+      <div class="benefit-item">
+        <h3>Rapid și Eficient</h3>
+        <p>Performanță ridicată și timpi minimi de încărcare pentru o experiență fluidă.</p>
+      </div>
+      <div class="benefit-item">
+        <h3>Design Modern</h3>
+        <p>Interfață curată și adaptabilă, optimizată perfect pentru orice dispozitiv.</p>
+      </div>
+      <div class="benefit-item">
+        <h3>Ușor de Folosit</h3>
+        <p>Navigare intuitivă și structură clară, concepută pentru confortul utilizatorilor.</p>
+      </div>
+    </section>
   </main>
 </body>
 </html>
